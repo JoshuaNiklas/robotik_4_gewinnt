@@ -1,0 +1,1 @@
+from processing.captureCamera import main as camera_main
