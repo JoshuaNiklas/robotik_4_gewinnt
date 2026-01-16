@@ -1,0 +1,47 @@
+&ACCESS RVP
+DEFDAT ConnectFour
+
+;; This two should be in config file
+;;    INT CELL_SEL = -1
+;;    INT SYNC_VAR = 0
+
+    ; the game field origin position
+    DECL REAL origin_x = 0
+    DECL REAL origin_y = 0
+    
+    ; a cell have the same width and height
+    DECL REAL cell_size = 5
+    
+    ; number of colomns and rows of the game field
+    DECL INT cols = 6
+    DECL INT rows = 7
+    
+    DECL REAL z_draw = 10
+    DECL REAL z_safe = 20
+
+    
+    DECL INT row
+    DECL INT col
+    DECL INT cell_num
+    
+    ; the return value of modulo function
+    DECL INT mod_result
+    
+    ; Variables to draw the game field
+    DECL FRAME pos0
+    DECL FRAME pos1
+    DECL FRAME pos2
+    DECL FRAME p_start
+
+    DECL REAL board_width
+    DECL REAL board_height
+
+    DECL INT idx
+
+    ; cell center
+    DECL REAL cx
+    DECL REAL cy
+
+    DECL REAL r
+    
+ENDDAT

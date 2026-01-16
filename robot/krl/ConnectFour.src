@@ -1,0 +1,152 @@
+DEF ConnectFour()
+
+    BAS(#initmov,0)
+    BAS(#tool,3)
+    BAS(#base,3)
+
+    PTP $AXIS_ACT
+    p_start = $nullframe
+    
+    CELL_SEL = -1
+    SYNC_VAR = 0
+    
+    LOOP
+        IF (modulo(SYNC_VAR, 2) == 0) THEN
+         
+            IF (CELL_SEL >= 1) AND (CELL_SEL <= (cols*rows)) THEN
+
+                cell_num = CELL_SEL
+                row = (cell_num - 1) / cols + 1
+                col = modulo((cell_num - 1), cols) + 1
+
+                DrawCross()
+
+                CELL_SEL = -1
+                SYNC_VAR = SYNC_VAR + 1
+
+            ENDIF
+
+            IF (CELL_SEL == 0) THEN
+                DrawBoard()
+
+                CELL_SEL = -1
+                SYNC_VAR = SYNC_VAR + 1
+            ENDIF
+        
+        ENDIF
+        
+        WAIT SEC 0.8
+    ENDLOOP
+
+END
+
+DEF DrawBoard()
+
+    board_width = cols * cell_size
+    board_height = rows * cell_size
+
+    ; Draw vertical lines (5 = cols - 1)    
+    idx = 1
+    LOOP
+        IF idx == (cols - 1) THEN
+            EXIT
+        ENDIF
+
+        ; pos = {X (origin_x + idx * cell_size), Y origin_y, Z z_safe, A 0, B 0, C 0}
+        pos0 = p_start
+        pos0.X = (origin_x + idx * cell_size)
+        pos0.Y = origin_y
+        pos0.Z = z_safe
+        PTP pos0
+        pos0.Z = z_draw
+        LIN pos0
+
+        pos0.Y = origin_y + board_height
+        LIN pos0
+
+        pos0.Z = z_safe
+        PTP pos0
+        idx = idx + 1
+    ENDLOOP
+
+
+    ; Draw horizontal lines (6 = rows - 1)
+    idx = 1
+    LOOP
+        IF idx == (rows - 1) THEN
+            EXIT
+        ENDIF
+
+	; pos = {X origin_x, Y (origin_y + idx * cell_size), Z z_safe, A 0, B 0, C 0}
+        pos0 = p_start
+        pos0.X = origin_x
+        pos0.Y = (origin_y + idx * cell_size)
+        pos0.Z = z_safe
+
+
+        PTP pos0
+        pos0.Z = z_draw
+        LIN pos0
+
+        pos0.X = origin_x + board_width
+        LIN pos0
+
+        pos0.Z = z_safe
+        PTP pos0
+        idx = idx + 1
+    ENDLOOP
+
+END
+
+DEF DrawCross()
+    cx = origin_x + (col - 1) * cell_size + cell_size / 2
+    cy = origin_y + (row - 1) * cell_size + cell_size / 2
+
+    r = cell_size / 3
+
+    ; First diagonal
+    ; pos1 = {X (cx - r), Y (cy - r), Z z_safe, A 0, B 0, C 0}
+    pos1 = p_start
+    pos1.X = (cx - r)
+    pos1.Y = (cy - r)
+    pos1.Z = z_safe
+
+    ; pos2 = {X (cx + r), Y (cy + r), Z z_draw, A 0, B 0, C 0}
+    pos2 = p_start
+    pos2.X = (cx + r)
+    pos2.Y = (cy + r)
+    pos2.Z = z_draw
+
+    PTP pos1
+    pos1.Z = z_draw
+    LIN pos1
+    LIN pos2
+    pos2.Z = z_safe
+    PTP pos2
+    
+    ; Second diagonal
+    ; pos1 = {X (cx - r), Y (cy + r), Z z_safe, A 0, B 0, C 0}
+    pos1 = p_start
+    pos1.X = (cx - r)
+    pos1.Y = (cy + r)
+    pos1.Z = z_safe
+
+    ; pos2 = {X (cx + r), Y (cy - r), Z z_draw, A 0, B 0, C 0}
+    pos2 = p_start
+    pos2.X = (cx + r)
+    pos2.Y = (cy - r)
+    pos2.Z = z_draw
+
+    PTP pos1
+    pos1.Z = z_draw
+    LIN pos1
+    LIN pos2
+    pos2.Z = z_safe
+    PTP pos2
+END
+
+DEFFCT INT modulo(mod_arg_a:IN, mod_arg_b:IN)
+    DECL INT mod_arg_a
+    DECL INT mod_arg_b
+    return (mod_arg_a - mod_arg_b * (mod_arg_a / mod_arg_b))
+ENDFCT
