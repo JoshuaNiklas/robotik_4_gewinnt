@@ -160,6 +160,7 @@ if __name__ == "__main__":
 
                 logging.info(f"SYNC_VAR: {SYNC_VAR}, CELL_SEL: {CELL_SEL}")
 
+                time.sleep(2000)
                 if (SYNC_VAR % 2 != 0) and (CELL_SEL == -1):
                     logging.info("Computer Operation detected")
                     SYNC_VAR += 1
