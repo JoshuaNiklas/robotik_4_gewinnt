@@ -1,3 +1,6 @@
+&ACCESS RVP
+&REL 8
+&PARAM DISKPATH = KRC:\R1\Program
 DEF ConnectFour()
 
     BAS(#initmov,0)
@@ -11,7 +14,8 @@ DEF ConnectFour()
     SYNC_VAR = 0
     
     LOOP
-        IF (modulo(SYNC_VAR, 2) == 0) THEN
+      mod_assert = modulo(SYNC_VAR, 2)
+        IF (mod_assert == 0) THEN
          
             IF (CELL_SEL >= 1) AND (CELL_SEL <= (cols*rows)) THEN
 
@@ -36,6 +40,8 @@ DEF ConnectFour()
         ENDIF
         
         WAIT SEC 0.8
+        PTP {X -49.67, Y 11.9, Z 261.33, A 0, B 0, C 0, S 2, T 3}
+
     ENDLOOP
 
 END
@@ -48,7 +54,7 @@ DEF DrawBoard()
     ; Draw vertical lines (5 = cols - 1)    
     idx = 1
     LOOP
-        IF idx == (cols - 1) THEN
+        IF idx > (cols - 1) THEN
             EXIT
         ENDIF
 
@@ -73,7 +79,7 @@ DEF DrawBoard()
     ; Draw horizontal lines (6 = rows - 1)
     idx = 1
     LOOP
-        IF idx == (rows - 1) THEN
+        IF idx > (rows - 1) THEN
             EXIT
         ENDIF
 
@@ -96,6 +102,26 @@ DEF DrawBoard()
         idx = idx + 1
     ENDLOOP
 
+    ; frame quick-n-dirty
+    pos0 = $nullframe
+    pos0.z = z_safe
+    PTP pos0
+
+    pos0.z = z_draw
+    LIN pos0
+    
+    pos0.x = cell_size * 6
+    LIN pos0
+
+    pos0.y = cell_size * 7
+    LIN pos0
+
+    pos0.x = 0
+    LIN pos0
+
+    pos0.y = 0
+    LIN pos0
+    LIN {z 10}
 END
 
 DEF DrawCross()

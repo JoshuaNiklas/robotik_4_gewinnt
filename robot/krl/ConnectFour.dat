@@ -1,47 +1,53 @@
 &ACCESS RVP
-DEFDAT ConnectFour
+&REL 8
+&PARAM DISKPATH = KRC:\R1\Program
+DEFDAT  connectfour
 
+;; api related variables
 ;; This two should be in config file
 ;;    INT CELL_SEL = -1
 ;;    INT SYNC_VAR = 0
 
-    ; the game field origin position
-    DECL REAL origin_x = 0
-    DECL REAL origin_y = 0
-    
-    ; a cell have the same width and height
-    DECL REAL cell_size = 5
-    
-    ; number of colomns and rows of the game field
-    DECL INT cols = 6
-    DECL INT rows = 7
-    
-    DECL REAL z_draw = 10
-    DECL REAL z_safe = 20
+; the game field origin position
+DECL REAL origin_x=0.0
+DECL REAL origin_y=0.0
 
-    
-    DECL INT row
-    DECL INT col
-    DECL INT cell_num
-    
-    ; the return value of modulo function
-    DECL INT mod_result
-    
-    ; Variables to draw the game field
-    DECL FRAME pos0
-    DECL FRAME pos1
-    DECL FRAME pos2
-    DECL FRAME p_start
+; drawing height and safe clearance height
+DECL REAL z_draw=-16.0000
+DECL REAL z_safe=5.00000
 
-    DECL REAL board_width
-    DECL REAL board_height
+; modulo assertion
+INT mod_assert=1
 
-    DECL INT idx
+; the return value of modulo function
+DECL INT mod_result
 
-    ; cell center
-    DECL REAL cx
-    DECL REAL cy
+; number of colomns and rows of the game field
+DECL INT cols=6
+DECL INT rows=7
 
-    DECL REAL r
-    
+; game field attributes
+DECL INT row
+DECL INT col
+DECL INT cell_num
+DECL REAL board_width
+DECL REAL board_height
+
+; cell width and height
+DECL REAL cell_size=10.00000
+
+; cell center coordinate
+DECL REAL cx
+DECL REAL cy
+DECL REAL r
+
+; variables to draw the game field
+DECL FRAME pos0
+DECL FRAME pos1
+DECL FRAME pos2
+DECL FRAME p_start
+
+; iteration variable
+DECL INT idx
+
 ENDDAT
