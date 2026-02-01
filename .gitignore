@@ -22,3 +22,5 @@ __pycache__/       # Python bytecode cache directory
 # Docker
 docker-compose.override.yml # Docker override config
 ui/__pycache__/main_ui.cpython-311.pyc
+processing/__pycache__/tracker.cpython-311.pyc
+ui/__pycache__/main_ui.cpython-311.pyc

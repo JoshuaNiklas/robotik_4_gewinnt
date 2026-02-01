@@ -1,19 +1,47 @@
 import os
 import re
+import sys
 import time
 import signal
-import sys
+import xml.etree.ElementTree as ET
 from paddleocr import TextRecognition
 
 # --------------------------------------------------
 # Stop handling
 # --------------------------------------------------
 running = True
+XML_FILE = './processing/board_detection.xml'
+
+def write_xml(board_state):
+    try:
+        tree = ET.parse(XML_FILE)
+        root = tree.getroot()
+        root.find('board_state').text = str(board_state)
+        tree.write(XML_FILE)
+    except Exception as e:
+        print(f"Error writing XML: {e}")  # Write updated game status to XML
 
 def handle_stop(signum, frame):
     global running
     print("Tracker stopping...")
     running = False
+
+
+def initialize_xml():
+    if not os.path.exists(XML_FILE):
+        root = ET.Element("detection")
+        board_state = ET.SubElement(root, "board_state")
+        board_state.text = "[]"
+        tree = ET.ElementTree(root)
+        tree.write(XML_FILE)
+        print(f"XML file '{XML_FILE}' initialized.")
+    else:
+        root = ET.Element("detection")
+        board_state = ET.SubElement(root, "board_state")
+        board_state.text = "[]"
+        tree = ET.ElementTree(root)
+        tree.write(XML_FILE)
+        print(f"XML file '{XML_FILE}' reset.")  # Initialize or reset XML file
 
 signal.signal(signal.SIGTERM, handle_stop)
 signal.signal(signal.SIGINT, handle_stop)
@@ -48,6 +76,8 @@ def validate_text(text):
 # --------------------------------------------------
 # Infinite processing loop
 # --------------------------------------------------
+initialize_xml()
+
 while running:
     detected_texts = []
 
@@ -98,6 +128,8 @@ while running:
 
     for row in detected_texts_2d:
         print(row)
+
+    write_xml(detected_texts_2d)
 
     # Preventing overload
     time.sleep(0.5)

@@ -1,7 +1,8 @@
+import xml.etree.ElementTree as ET
 import numpy as np
 import random
+import time
 import math
-import xml.etree.ElementTree as ET
 import os
 
 ROW_COUNT = 6
@@ -132,6 +133,8 @@ def initialize_xml():
         board_state.text = "[[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]"
         stop = ET.SubElement(root, "stop")
         stop.text = "0"
+        start_status = ET.SubElement(root, "start")
+        start_status.text = "0"
         tree = ET.ElementTree(root)
         tree.write(XML_FILE)
         print(f"XML file '{XML_FILE}' initialized.")
@@ -149,6 +152,8 @@ def initialize_xml():
         board_state.text = "[[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]"
         stop = ET.SubElement(root, "stop")
         stop.text = "0"
+        start_status = ET.SubElement(root, "start")
+        start_status.text = "0"
         tree = ET.ElementTree(root)
         tree.write(XML_FILE)
         print(f"XML file '{XML_FILE}' reset.")  # Initialize or reset XML file
@@ -167,6 +172,15 @@ def read_xml():
     except Exception as e:
         print(f"Error reading XML: {e}")
         return None, None, 'error', 0, [], []  # Read current game status from XML
+
+def write_xml_start():
+    try:
+        tree = ET.parse(XML_FILE)
+        root = tree.getroot()
+        root.find('start').text = str(1)
+        tree.write(XML_FILE)
+    except Exception as e:
+        print(f"Error writing XML: {e}")  # Write updated game status to XML
 
 def write_xml(player_col, computer_col, status, stop, moves, board_state):
     try:
@@ -193,7 +207,9 @@ def play_game():
         if stop == 1:
             print("The game has been stopped.")
             break
-        
+
+        write_xml_start()
+
         if turn % 2 == 0:  # Player's turn
             if status == 'player_wait' and player_col != -1:
                 if 0 <= player_col < COLUMN_COUNT and is_valid_location(board, player_col):
@@ -229,7 +245,14 @@ def play_game():
             game_over = True
 
         turn += 1
+        time.sleep(0.75)
+
     initialize_xml()
     
 if __name__ == "__main__":
-    play_game()  # Start the game loop
+    try:
+        play_game()  # Start the game loop
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        initialize_xml()
