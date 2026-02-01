@@ -1,0 +1,23 @@
+.DS_Store          # macOS Finder file
+Thumbs.db          # Windows image file cache
+desktop.ini        # Windows desktop configuration file
+
+*.pyc              # Compiled Python files
+*.pyo              # Python optimization files
+__pycache__/       # Python bytecode cache directory
+
+.vscode/           # Visual Studio Code workspace settings
+.idea/             # JetBrains IDEs (e.g., PyCharm, IntelliJ) settings
+*.sublime-workspace # Sublime Text workspace settings
+
+*.log              # Log files
+
+*.swp              # Vim swap files
+*.bak              # Backup files
+
+*.xml
+
+.ipynb_checkpoints/ # Jupyter notebook checkpoints
+
+# Docker
+docker-compose.override.yml # Docker override config
