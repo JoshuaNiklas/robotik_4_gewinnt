@@ -11,6 +11,7 @@ import os
 import logging
 from processing.captureCamera import main as camera_main
 from tkinter import messagebox
+import xml.etree.ElementTree as ET
 
 # ------------------------------------------------------------------
 # Configuration
@@ -26,6 +27,8 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.yaml")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 CROP_SAVE_PATH = os.path.join(DATA_DIR, CROP_FILENAME)
+PROCESSING_DIR = os.path.join(BASE_DIR, "processing")
+GAME_STATUS_PATH = os.path.join(PROCESSING_DIR, "game_status.xml")
 
 ROW_COUNT = 6
 COLUMN_COUNT = 7
@@ -119,6 +122,22 @@ def load_points_from_yaml(file_path: str):
 
     return [], None
 
+def read_xml():
+    """Parse the XML to get the board state."""
+    try:
+        tree = ET.parse(GAME_STATUS_PATH)
+        root = tree.getroot()
+
+        # Extract the board state as a string
+        board_state_str = root.find("board_state").text
+        board_state = eval(board_state_str)
+
+        return board_state
+    except Exception as e:
+        print(f"Error reading XML file: {e}")
+        return []
+
+
 # ------------------------------------------------------------------
 # UI Class
 # ------------------------------------------------------------------
@@ -128,7 +147,6 @@ class CameraInterface:
         self.root.title("Camera Controller")
 
         self.board = [[0 for _ in range(7)] for _ in range(6)]
-        self.game_over = False
 
         self._init_tabs()
         self._init_camera_state()
@@ -609,139 +627,33 @@ class CameraInterface:
     # TODO Debug and Test
     # --------------------------------------------------------------
     def _init_game_tab(self):
-        self.game_board = np.zeros((ROW_COUNT, COLUMN_COUNT), int)  # 6x7 grid
-        self.game_over = False
-        self.turn = 0  # 0 for Player, 1 for Computer
+        # Create a 7x6 grid of labels (for the Connect Four board)
+        self.grid_labels = []
+        for row in range(6):
+            row_labels = []
+            for col in range(7):
+                label = tk.Label(self.game_tab, width=6, height=3, relief="solid", bg="white")
+                label.grid(row=row, column=col, padx=2, pady=2)
+                row_labels.append(label)
+            self.grid_labels.append(row_labels)
 
-        self.game_status_label = tk.Label(
-            self.game_tab, text="Player's Turn (X)", width=30, bg="lightgray"
-        )
-        self.game_status_label.grid(row=0, column=0, columnspan=7, pady=10)
+        self.update_board()
 
-        self.restart_button = tk.Button(
-            self.game_tab,
-            text="Restart Game",
-            command=self.restart_game,
-            state="disabled"
-        )
-        self.restart_button.grid(row=1, column=0, columnspan=7, pady=5)
+    def update_board(self):
+        board_state = read_xml()
 
-        self.buttons = [[None for _ in range(COLUMN_COUNT)] for _ in range(ROW_COUNT)]
-        self.create_game_buttons()
+        if board_state:
+            for row in range(6):
+                for col in range(7):
+                    cell_value = board_state[row][col]
+                    if cell_value == 1:
+                        self.grid_labels[row][col].config(bg="red")  # Player's piece
+                    elif cell_value == 2:
+                        self.grid_labels[row][col].config(bg="yellow")  # Computer's piece
+                    else:
+                        self.grid_labels[row][col].config(bg="white")  # Empty cell
 
-    def create_game_buttons(self):
-        for r in range(ROW_COUNT):
-            for c in range(COLUMN_COUNT):
-                self.buttons[r][c] = tk.Button(
-                    self.game_tab,
-                    width=6,
-                    height=3,
-                    command=lambda r=r, c=c: self.player_move(r, c)
-                )
-                self.buttons[r][c].grid(row=r+2, column=c, padx=2, pady=2)
-
-    def update_game_canvas(self):
-        for r in range(ROW_COUNT):
-            for c in range(COLUMN_COUNT):
-                color = "white" if self.game_board[r][c] == 0 else (
-                    "red" if self.game_board[r][c] == PLAYER else "yellow"
-                )
-                self.buttons[r][c].config(bg=color)
-
-        # Update turn label
-        if self.game_over:
-            if self.check_win(PLAYER):
-                self.game_status_label.config(text="Player (X) Wins!", bg="green")
-            elif self.check_win(COMPUTER):
-                self.game_status_label.config(text="Computer (O) Wins!", bg="red")
-            else:
-                self.game_status_label.config(text="It's a Tie!", bg="gray")
-            self.restart_button.config(state="normal")
-        else:
-            self.game_status_label.config(
-                text="Player's Turn (X)" if self.turn % 2 == 0 else "Computer's Turn (O)",
-                bg="lightgray"
-            )
-
-    def player_move(self, row, col):
-        if self.game_over:
-            return
-
-        if self.is_valid_location(col):
-            row = self.get_next_available_row(col)
-            self.drop_piece(row, col, PLAYER)
-            self.turn += 1
-
-            if self.check_win(PLAYER):
-                self.game_over = True
-            elif np.all(self.game_board != 0):
-                self.game_over = True
-            else:
-                self.computer_move()
-
-            self.update_game_canvas()
-
-    def computer_move(self):
-        if self.game_over:
-            return
-        
-        self.game_status_label.config(text="Computer's Turn (O)", bg="lightgray")
-        col = self.get_computer_move()
-        row = self.get_next_available_row(col)
-        self.drop_piece(row, col, COMPUTER)
-        self.turn += 1
-
-        if self.check_win(COMPUTER):
-            self.game_over = True
-        elif np.all(self.game_board != 0):
-            self.game_over = True
-
-        self.update_game_canvas()
-
-    def get_computer_move(self):
-        return np.random.choice([c for c in range(COLUMN_COUNT) if self.is_valid_location(c)])
-
-    def is_valid_location(self, col):
-        return self.game_board[ROW_COUNT - 1][col] == 0
-
-    def get_next_available_row(self, col):
-        for row in range(ROW_COUNT):
-            if self.game_board[row][col] == 0:
-                return row
-
-    def drop_piece(self, row, col, piece):
-        self.game_board[row][col] = piece
-
-    def check_win(self, piece):
-        for c in range(COLUMN_COUNT - 3):
-            for r in range(ROW_COUNT):
-                if all(self.game_board[r][c + i] == piece for i in range(4)):
-                    return True
-
-        for c in range(COLUMN_COUNT):
-            for r in range(ROW_COUNT - 3):
-                if all(self.game_board[r + i][c] == piece for i in range(4)):
-                    return True
-
-        for c in range(COLUMN_COUNT - 3):
-            for r in range(ROW_COUNT - 3):
-                if all(self.game_board[r + i][c + i] == piece for i in range(4)):
-                    return True
-
-        for c in range(COLUMN_COUNT - 3):
-            for r in range(3, ROW_COUNT):
-                if all(self.game_board[r - i][c + i] == piece for i in range(4)):
-                    return True
-
-        return False
-
-    def restart_game(self):
-        self.game_board = np.zeros((ROW_COUNT, COLUMN_COUNT), int)
-        self.game_over = False
-        self.turn = 0
-        self.restart_button.config(state="disabled")
-        self.update_game_canvas()
-
+        self.root.after(1000, self.update_board)
 
     # --------------------------------------------------------------
     # Quadrilateral interaction
