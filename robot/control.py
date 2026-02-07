@@ -152,25 +152,27 @@ if __name__ == "__main__":
             logging.error("Failed to connect after multiple attempts, Exiting...")
             exit(1)
 
-        if args.no_ui: # Run the program without UI
-            logging.info("Running without Terminal UI...")
-            while True:
-                SYNC_VAR = int(eki.read_variable("SYNC_VAR").get('Value', 0))
-                CELL_SEL = int(eki.read_variable("CELL_SEL").get('Value', -1))
+        logging.info("Running without Terminal UI...")
+        
+        SYNC_VAR = int(eki.read_variable("SYNC_VAR").get('Value', 0))
+        CELL_SEL = int(eki.read_variable("CELL_SEL").get('Value', -1))
 
-                logging.info(f"SYNC_VAR: {SYNC_VAR}, CELL_SEL: {CELL_SEL}")
+        logging.info(f"SYNC_VAR: {SYNC_VAR}, CELL_SEL: {CELL_SEL}")
+        
+        # while True:
+            # SYNC_VAR = int(eki.read_variable("SYNC_VAR").get('Value', 0))
+            # CELL_SEL = int(eki.read_variable("CELL_SEL").get('Value', -1))
 
-                time.sleep(2000)
-                if (SYNC_VAR % 2 != 0) and (CELL_SEL == -1):
-                    logging.info("Computer Operation detected")
-                    SYNC_VAR += 1
-                    time.sleep(1)
-                    eki.write_variable("CELL_SEL", 0)
-                    eki.write_variable("SYNC_VAR", SYNC_VAR)
-                    time.sleep(1)
-        else: # Show the UI by default
-            logging.info("Running with Terminal UI...")
-            minimal_terminal_ui()
+            # logging.info(f"SYNC_VAR: {SYNC_VAR}, CELL_SEL: {CELL_SEL}")
+
+            # time.sleep(2000)
+            # if (SYNC_VAR % 2 != 0) and (CELL_SEL == -1):
+            #     logging.info("Computer Operation detected")
+            #     SYNC_VAR += 1
+            #     time.sleep(1)
+            #     eki.write_variable("CELL_SEL", 0)
+            #     eki.write_variable("SYNC_VAR", SYNC_VAR)
+            #     time.sleep(1)
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")

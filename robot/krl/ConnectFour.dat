@@ -3,10 +3,27 @@
 &PARAM DISKPATH = KRC:\R1\Program
 DEFDAT  connectfour
 
-;; api related variables
-;; This two should be in config file
+;; ------------------------------------------------------------------
+;; api related variables:
+;;
+;; SYNC_VAR: Synchronization variable for communication between robot and computer
+;;
+;; - Even value  : Robot is allowed to execute its task
+;;                 After finishing, the robot increments SYNC_VAR by 1
+;; - Odd value   : Robot waits. Computer may read/write commands
+;;                 Computer increments SYNC_VAR by 1 when ready
+;;
+;; CELL_SEL: Cell selection command variable
+;; 
+;; - Default value: -1 (No action)
+;; - Value 0      : Draw the game field
+;; - Value 1..42  : Draw a cross in the selected cell (cell index mapping predefined)
+;;
+;; Notice !!! 
+;;    Both lines must be placed in config file
 ;;    INT CELL_SEL = -1
 ;;    INT SYNC_VAR = 0
+;; ------------------------------------------------------------------
 
 ; the game field origin position
 DECL REAL origin_x=0.0

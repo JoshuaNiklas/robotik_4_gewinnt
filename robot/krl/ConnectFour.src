@@ -1,12 +1,19 @@
 &ACCESS RVP
 &REL 8
 &PARAM DISKPATH = KRC:\R1\Program
+
 DEF ConnectFour()
 
+    ; Initialize robot motion system
     BAS(#initmov,0)
+
+    ; Select tool
     BAS(#tool,3)
+
+    ; Select base coordinate
     BAS(#base,3)
 
+    ; Move robot to its current axis position
     PTP $AXIS_ACT
     p_start = $nullframe
     
@@ -14,165 +21,198 @@ DEF ConnectFour()
     SYNC_VAR = 0
     
     LOOP
-      mod_assert = modulo(SYNC_VAR, 2)
-        IF (mod_assert == 0) THEN
-         
+
+        mod_assert = modulo(SYNC_VAR, 2)
+        IF (mod_assert == 0) THEN         
+
             IF (CELL_SEL >= 1) AND (CELL_SEL <= (cols*rows)) THEN
 
+                ; Convert linear cell number to row and column
                 cell_num = CELL_SEL
                 row = (cell_num - 1) / cols + 1
                 col = modulo((cell_num - 1), cols) + 1
 
+                ; Draw an X in the selected cell
                 DrawCross()
 
+                ; Reset cell selection
                 CELL_SEL = -1
                 SYNC_VAR = SYNC_VAR + 1
 
             ENDIF
 
             IF (CELL_SEL == 0) THEN
+
+                ; Draw Connect Four board
                 DrawBoard()
 
+                ; Reset cell selection
                 CELL_SEL = -1
                 SYNC_VAR = SYNC_VAR + 1
+
             ENDIF
         
         ENDIF
         
         WAIT SEC 0.8
+
+        ; Move to a waiting position
         PTP {X -49.67, Y 11.9, Z 261.33, A 0, B 0, C 0, S 2, T 3}
 
     ENDLOOP
 
 END
 
+
 DEF DrawBoard()
 
-    board_width = cols * cell_size
+    ; Compute overall board dimensions
+    board_width  = cols * cell_size
     board_height = rows * cell_size
 
-    ; Draw vertical lines (5 = cols - 1)    
+    ; Draw vertical grid lines (cols - 1 lines)
     idx = 1
     LOOP
         IF idx > (cols - 1) THEN
             EXIT
         ENDIF
 
-        ; pos = {X (origin_x + idx * cell_size), Y origin_y, Z z_safe, A 0, B 0, C 0}
+        ; Move above start
         pos0 = p_start
         pos0.X = (origin_x + idx * cell_size)
         pos0.Y = origin_y
         pos0.Z = z_safe
         PTP pos0
+
+        ; Lower tool to drawing height
         pos0.Z = z_draw
         LIN pos0
 
+        ; Draw vertical line upward
         pos0.Y = origin_y + board_height
         LIN pos0
 
+        ; Lift tool back to safe height
         pos0.Z = z_safe
         PTP pos0
+
         idx = idx + 1
     ENDLOOP
 
 
-    ; Draw horizontal lines (6 = rows - 1)
+    ; Draw horizontal grid lines (rows - 1 lines)
     idx = 1
     LOOP
         IF idx > (rows - 1) THEN
             EXIT
         ENDIF
 
-	; pos = {X origin_x, Y (origin_y + idx * cell_size), Z z_safe, A 0, B 0, C 0}
+        ; Move above start
         pos0 = p_start
         pos0.X = origin_x
         pos0.Y = (origin_y + idx * cell_size)
         pos0.Z = z_safe
-
-
         PTP pos0
+
+        ; Lower tool to drawing height
         pos0.Z = z_draw
         LIN pos0
 
+        ; Draw horizontal line to the right
         pos0.X = origin_x + board_width
         LIN pos0
 
+        ; Lift tool back to safe height
         pos0.Z = z_safe
         PTP pos0
+
         idx = idx + 1
     ENDLOOP
 
-    ; frame quick-n-dirty
+    ; Draw outer frame (quick implementation)
     pos0 = $nullframe
-    pos0.z = z_safe
+    pos0.Z = z_safe
     PTP pos0
 
-    pos0.z = z_draw
+    pos0.Z = z_draw
     LIN pos0
     
-    pos0.x = cell_size * 6
+    pos0.X = cell_size * 6
     LIN pos0
 
-    pos0.y = cell_size * 7
+    pos0.Y = cell_size * 7
     LIN pos0
 
-    pos0.x = 0
+    pos0.X = 0
     LIN pos0
 
-    pos0.y = 0
+    pos0.Y = 0
     LIN pos0
-    LIN {z 10}
+
+    LIN {Z 10}
 END
 
+
 DEF DrawCross()
+
+    ; calculate center of selected cell
     cx = origin_x + (col - 1) * cell_size + cell_size / 2
     cy = origin_y + (row - 1) * cell_size + cell_size / 2
-
     r = cell_size / 3
 
     ; First diagonal
-    ; pos1 = {X (cx - r), Y (cy - r), Z z_safe, A 0, B 0, C 0}
     pos1 = p_start
     pos1.X = (cx - r)
     pos1.Y = (cy - r)
     pos1.Z = z_safe
 
-    ; pos2 = {X (cx + r), Y (cy + r), Z z_draw, A 0, B 0, C 0}
     pos2 = p_start
     pos2.X = (cx + r)
     pos2.Y = (cy + r)
     pos2.Z = z_draw
 
+    ; Move above start point
     PTP pos1
+
+    ; Lower pen and draw diagonal
     pos1.Z = z_draw
     LIN pos1
     LIN pos2
+
+    ; Lift pen
     pos2.Z = z_safe
     PTP pos2
     
     ; Second diagonal
-    ; pos1 = {X (cx - r), Y (cy + r), Z z_safe, A 0, B 0, C 0}
     pos1 = p_start
     pos1.X = (cx - r)
     pos1.Y = (cy + r)
     pos1.Z = z_safe
 
-    ; pos2 = {X (cx + r), Y (cy - r), Z z_draw, A 0, B 0, C 0}
     pos2 = p_start
     pos2.X = (cx + r)
     pos2.Y = (cy - r)
     pos2.Z = z_draw
 
+    ; Move above start point
     PTP pos1
+
+    ; Lower pen and draw diagonal
     pos1.Z = z_draw
     LIN pos1
     LIN pos2
+
+    ; Lift pen
     pos2.Z = z_safe
     PTP pos2
 END
 
+
 DEFFCT INT modulo(mod_arg_a:IN, mod_arg_b:IN)
+
     DECL INT mod_arg_a
     DECL INT mod_arg_b
+
     return (mod_arg_a - mod_arg_b * (mod_arg_a / mod_arg_b))
+
 ENDFCT
