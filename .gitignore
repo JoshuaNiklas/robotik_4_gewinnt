@@ -1,3 +1,6 @@
+data/*
+
+
 .DS_Store          # macOS Finder file
 Thumbs.db          # Windows image file cache
 desktop.ini        # Windows desktop configuration file
@@ -19,10 +22,4 @@ __pycache__/       # Python bytecode cache directory
 
 .ipynb_checkpoints/ # Jupyter notebook checkpoints
 
-# Docker
-docker-compose.override.yml # Docker override config
-ui/__pycache__/main_ui.cpython-311.pyc
-processing/__pycache__/tracker.cpython-311.pyc
-ui/__pycache__/main_ui.cpython-311.pyc
-*.pyc
-/data
+docker-compose.override.yml
