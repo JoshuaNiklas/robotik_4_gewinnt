@@ -18,7 +18,7 @@ DEF ConnectFour()
     p_start = $nullframe
     
     CELL_SEL = -1
-    SYNC_VAR = 0
+    SYNC_VAR = 1
     
     LOOP
 
@@ -36,8 +36,7 @@ DEF ConnectFour()
                 DrawCross()
 
                 ; Reset cell selection
-                CELL_SEL = -1
-                SYNC_VAR = SYNC_VAR + 1
+                reset_vars = 1
 
             ENDIF
 
@@ -47,8 +46,7 @@ DEF ConnectFour()
                 DrawBoard()
 
                 ; Reset cell selection
-                CELL_SEL = -1
-                SYNC_VAR = SYNC_VAR + 1
+                reset_vars = 1
 
             ENDIF
         
@@ -58,6 +56,14 @@ DEF ConnectFour()
 
         ; Move to a waiting position
         PTP {X -49.67, Y 11.9, Z 261.33, A 0, B 0, C 0, S 2, T 3}
+
+	IF (reset_vars == 1) THEN
+		; Reset cell selection
+                CELL_SEL = -1
+                SYNC_VAR = SYNC_VAR + 1
+		reset_vars = 0
+	ENDIF	
+	
 
     ENDLOOP
 

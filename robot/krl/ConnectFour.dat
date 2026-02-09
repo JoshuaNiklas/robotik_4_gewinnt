@@ -67,4 +67,7 @@ DECL FRAME p_start
 ; iteration variable
 DECL INT idx
 
+; controll reset block
+DECL INT reset_vars = 0
+
 ENDDAT

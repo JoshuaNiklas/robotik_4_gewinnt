@@ -3,6 +3,7 @@ import numpy as np
 import random
 import time
 import math
+import copy
 import os
 
 ROW_COUNT = 6
@@ -125,10 +126,16 @@ def initialize_xml():
         player_column.text = "-1"
         computer_column = ET.SubElement(root, "computer_column")
         computer_column.text = "-1"
+        computer_row = ET.SubElement(root, "computer_row")
+        computer_row.text = "-1"
         status = ET.SubElement(root, "status")
         status.text = "player_wait"
         moves = ET.SubElement(root, "moves")
         moves.text = "[]"
+
+        game_state = ET.SubElement(root, "game_state")
+        game_state.text = "[['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', '']]"
+        
         board_state = ET.SubElement(root, "board_state")
         board_state.text = "[[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]"
         stop = ET.SubElement(root, "stop")
@@ -144,10 +151,14 @@ def initialize_xml():
         player_column.text = "-1"
         computer_column = ET.SubElement(root, "computer_column")
         computer_column.text = "-1"
+        computer_row = ET.SubElement(root, "computer_row")
+        computer_row.text = "-1"
         status = ET.SubElement(root, "status")
         status.text = "player_wait"
         moves = ET.SubElement(root, "moves")
         moves.text = "[]"
+        game_state = ET.SubElement(root, "game_state")
+        game_state.text = "[['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', '']]"
         board_state = ET.SubElement(root, "board_state")
         board_state.text = "[[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]"
         stop = ET.SubElement(root, "stop")
@@ -182,15 +193,28 @@ def write_xml_start():
     except Exception as e:
         print(f"Error writing XML: {e}")  # Write updated game status to XML
 
-def write_xml(player_col, computer_col, status, stop, moves, board_state):
+def write_xml(player_col, computer_col, status, stop, moves, board_state, computer_row):
     try:
         tree = ET.parse(XML_FILE)
         root = tree.getroot()
         root.find('player_column').text = str(player_col)
         root.find('computer_column').text = str(computer_col)
+        root.find('computer_row').text = str(computer_row)
         root.find('status').text = status
         root.find('stop').text = str(stop)
         root.find('moves').text = str(moves)
+
+        game_state = copy.deepcopy(board_state[::-1])
+        for i in range(len(game_state)):
+            for j in range(len(game_state[i])):
+                if game_state[i][j] == 0:
+                    game_state[i][j] = ''
+                elif game_state[i][j] == 1:
+                    game_state[i][j] = 'O'
+                elif game_state[i][j] == 2:
+                    game_state[i][j] = 'X'
+
+        root.find('game_state').text = str(game_state)
         root.find('board_state').text = str(board_state[::-1])
         tree.write(XML_FILE)
     except Exception as e:
@@ -216,10 +240,10 @@ def play_game():
                     row = get_next_available_row(board, player_col)
                     drop_piece(board, row, player_col, PLAYER)
                     moves.append(('player', player_col))
-                    write_xml(player_col, -1, 'computer_wait', 0, moves, board.tolist())
+                    write_xml(player_col, -1, 'computer_wait', 0, moves, board.tolist(), -1)
                     if check_win(board, PLAYER):
                         print("Player wins!")
-                        write_xml(-1, computer_col, 'player_win', 0, moves, board.tolist())
+                        write_xml(-1, computer_col, 'player_win', 0, moves, board.tolist(), -1)
                         game_over = True
                 else:
                     print("Invalid move in XML! Try again.")
@@ -233,15 +257,16 @@ def play_game():
                 row = get_next_available_row(board, computer_col)
                 drop_piece(board, row, computer_col, COMPUTER)
                 moves.append(('computer', computer_col))
-                write_xml(-1, computer_col, 'player_wait', 0, moves, board.tolist())
+                write_xml(-1, computer_col, 'player_wait', 0, moves, board.tolist(), row)
                 if check_win(board, COMPUTER):
                     print("Computer wins!")
-                    write_xml(-1, computer_col, 'computer_win', 0, moves, board.tolist())
+                    write_xml(-1, computer_col, 'computer_win', 0, moves, board.tolist(), row)
                     game_over = True
+                print(f"(col,row):{computer_col},{row}")
 
         if np.all(board != 0):
             print("It's a tie!")
-            write_xml(-1, -1, 'tie', 0, moves, board.tolist())
+            write_xml(-1, -1, 'tie', 0, moves, board.tolist(), -1)
             game_over = True
 
         turn += 1

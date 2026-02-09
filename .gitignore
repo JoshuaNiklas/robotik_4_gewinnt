@@ -1,6 +1,3 @@
-data/*
-
-
 .DS_Store          # macOS Finder file
 Thumbs.db          # Windows image file cache
 desktop.ini        # Windows desktop configuration file

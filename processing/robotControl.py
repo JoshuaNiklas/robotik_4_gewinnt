@@ -12,6 +12,30 @@ ROBOT_PORT = 6101
 MAX_RETRIES = 10
 RETRYING_TIME = 3
 
+def write_xml(xml_file, changes):
+    try:
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        for key, value in changes.items():
+            root.find(f'{key}').text = str(value)
+        tree.write(xml_file)
+    except Exception as e:
+        print(f"Error writing XML: {e}")
+
+def read_xml(xml_file, tags):
+    try:
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        vals = {}
+        for tag in tags:
+            val = root.find(f'{tag}').text
+            vals.update({f'{tag}':val})
+        return vals
+        
+    except Exception as e:
+        print(f"Error reading XML: {e}")
+        return None
+    
 def setup_logging(verbose_level):
     """Function to setup logging"""
     if verbose_level == 1:  # Show only INFO and higher messages
@@ -161,20 +185,32 @@ if __name__ == "__main__":
         # logging.info(f"SYNC_VAR: {SYNC_VAR}, CELL_SEL: {CELL_SEL}")
         
         # Advance Controll
+
+        eki.write_variable("CELL_SEL", -1)
+        eki.write_variable("SYNC_VAR", 1)
+
+        write_xml("robotControl.xml", {"SYNC_VAR": 1, "CELL_SEL":-1})
+
         while True:
             SYNC_VAR = int(eki.read_variable("SYNC_VAR").get('Value'))
-            CELL_SEL = int(eki.read_variable("CELL_SEL").get('Value'))
+            CELL_SEL_ASSET = int(eki.read_variable("CELL_SEL").get('Value'))
 
-            logging.info(f"SYNC_VAR: {SYNC_VAR}, CELL_SEL: {CELL_SEL}")
+            logging.info(f"SYNC_VAR: {SYNC_VAR}, CELL_SEL: {CELL_SEL_ASSET}")
+            write_xml("robotControl.xml", {"SYNC_VAR": SYNC_VAR})
 
-            if (SYNC_VAR % 2 != 0) and (CELL_SEL == -1):
+            res = read_xml("robotControl.xml", ["CELL_SEL"])
+            CELL_SEL = int(res["CELL_SEL"])
+
+            if (SYNC_VAR % 2 != 0) and (CELL_SEL != -1):
                 logging.info("Computer Operation detected")
                 SYNC_VAR += 1
                 time.sleep(1)
-                eki.write_variable("CELL_SEL", 0)
+                eki.write_variable("CELL_SEL", CELL_SEL)
                 eki.write_variable("SYNC_VAR", SYNC_VAR)
                 time.sleep(1)
-            
+                CELL_SEL = -1
+                write_xml("robotControl.xml", {"CELL_SEL": -1})
+
             time.sleep(3)
 
     except Exception as e:

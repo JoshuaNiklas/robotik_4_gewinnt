@@ -129,7 +129,7 @@ def read_xml():
         root = tree.getroot()
 
         # Extract the board state as a string
-        board_state_str = root.find("board_state").text
+        board_state_str = root.find("game_state").text
         board_state = eval(board_state_str)
 
         return board_state
@@ -646,9 +646,9 @@ class CameraInterface:
             for row in range(6):
                 for col in range(7):
                     cell_value = board_state[row][col]
-                    if cell_value == 1:
+                    if cell_value == "O":
                         self.grid_labels[row][col].config(bg="red")  # Player's piece
-                    elif cell_value == 2:
+                    elif cell_value == "X":
                         self.grid_labels[row][col].config(bg="yellow")  # Computer's piece
                     else:
                         self.grid_labels[row][col].config(bg="white")  # Empty cell

@@ -12,15 +12,28 @@ from paddleocr import TextRecognition
 running = True
 XML_FILE = './processing/board_detection.xml'
 
-def write_xml(board_state):
+def write_xml(changes):
     try:
         tree = ET.parse(XML_FILE)
         root = tree.getroot()
-        root.find('board_state').text = str(board_state)
+        for key, value in changes.items():
+            root.find(f'{key}').text = str(value)
         tree.write(XML_FILE)
     except Exception as e:
         print(f"Error writing XML: {e}")  # Write updated game status to XML
 
+def read_capture_status():
+    try:
+        tree = ET.parse(XML_FILE)
+        root = tree.getroot()
+        
+        capture_status = root.find('capture_status').text
+        return int(capture_status)  # Return as integer
+        
+    except Exception as e:
+        print(f"Error reading XML: {e}")
+        return None  # Return None in case of error
+    
 def handle_stop(signum, frame):
     global running
     print("Tracker stopping...")
@@ -30,15 +43,23 @@ def handle_stop(signum, frame):
 def initialize_xml():
     if not os.path.exists(XML_FILE):
         root = ET.Element("detection")
+        detection_id = ET.SubElement(root, "detection_id")
+        detection_id.text = "0"
         board_state = ET.SubElement(root, "board_state")
         board_state.text = "[]"
+        capture_status = ET.SubElement(root, "capture_status")
+        capture_status.text = "0"
         tree = ET.ElementTree(root)
         tree.write(XML_FILE)
         print(f"XML file '{XML_FILE}' initialized.")
     else:
         root = ET.Element("detection")
+        detection_id = ET.SubElement(root, "detection_id")
+        detection_id.text = "0"
         board_state = ET.SubElement(root, "board_state")
         board_state.text = "[]"
+        capture_status = ET.SubElement(root, "capture_status")
+        capture_status.text = "0"
         tree = ET.ElementTree(root)
         tree.write(XML_FILE)
         print(f"XML file '{XML_FILE}' reset.")  # Initialize or reset XML file
@@ -77,6 +98,7 @@ def validate_text(text):
 # Infinite processing loop
 # --------------------------------------------------
 initialize_xml()
+detect_id = 0
 
 while running:
     detected_texts = []
@@ -105,7 +127,7 @@ while running:
                 validated_text = validate_text(detected_text)  # Validate the detected text
                 detected_texts.append({
                     'input_path': image_path,
-                    'text': validated_text,  # Use validated text
+                    'text': validated_text,
                     'score': result.get('rec_score', 0.0),
                 })
     
@@ -126,10 +148,12 @@ while running:
                 row.append("")
         detected_texts_2d.append(row)
 
-    for row in detected_texts_2d:
-        print(row)
+    # for row in detected_texts_2d:
+    #     print(row)
 
-    write_xml(detected_texts_2d)
+    if (read_capture_status() == 1):
+        detect_id +=1
+        write_xml({"detection_id": detect_id, "board_state":detected_texts_2d, "capture_status":'0'})
 
     # Preventing overload
     time.sleep(0.5)
