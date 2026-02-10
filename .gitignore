@@ -15,8 +15,6 @@ __pycache__/       # Python bytecode cache directory
 *.swp              # Vim swap files
 *.bak              # Backup files
 
-*.xml
-
 .ipynb_checkpoints/ # Jupyter notebook checkpoints
 
 docker-compose.override.yml

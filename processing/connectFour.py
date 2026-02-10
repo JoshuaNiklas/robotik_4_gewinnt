@@ -161,6 +161,8 @@ def initialize_xml():
         game_state.text = "[['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', ''], ['', '', '', '', '', '', '']]"
         board_state = ET.SubElement(root, "board_state")
         board_state.text = "[[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]"
+        last_win_state = ET.SubElement(root, "last_win_state")
+        last_win_state.text = "0"
         stop = ET.SubElement(root, "stop")
         stop.text = "0"
         start_status = ET.SubElement(root, "start")
@@ -189,6 +191,15 @@ def write_xml_start():
         tree = ET.parse(XML_FILE)
         root = tree.getroot()
         root.find('start').text = str(1)
+        tree.write(XML_FILE)
+    except Exception as e:
+        print(f"Error writing XML: {e}")  # Write updated game status to XML
+
+def write_last_win_state_xml(last_win_state):
+    try:
+        tree = ET.parse(XML_FILE)
+        root = tree.getroot()
+        root.find('moves').text = str(last_win_state)
         tree.write(XML_FILE)
     except Exception as e:
         print(f"Error writing XML: {e}")  # Write updated game status to XML
@@ -242,7 +253,8 @@ def play_game():
                     moves.append(('player', player_col))
                     write_xml(player_col, -1, 'computer_wait', 0, moves, board.tolist(), -1)
                     if check_win(board, PLAYER):
-                        print("Player wins!")
+                        print("O wins!")
+                        write_last_win_state_xml("1")
                         write_xml(-1, computer_col, 'player_win', 0, moves, board.tolist(), -1)
                         game_over = True
                 else:
@@ -259,13 +271,14 @@ def play_game():
                 moves.append(('computer', computer_col))
                 write_xml(-1, computer_col, 'player_wait', 0, moves, board.tolist(), row)
                 if check_win(board, COMPUTER):
-                    print("Computer wins!")
+                    print("X wins!")
+                    write_last_win_state_xml("2")
                     write_xml(-1, computer_col, 'computer_win', 0, moves, board.tolist(), row)
                     game_over = True
-                print(f"(col,row):{computer_col},{row}")
 
         if np.all(board != 0):
             print("It's a tie!")
+            write_last_win_state_xml("3")
             write_xml(-1, -1, 'tie', 0, moves, board.tolist(), -1)
             game_over = True
 
@@ -276,7 +289,8 @@ def play_game():
     
 if __name__ == "__main__":
     try:
-        play_game()  # Start the game loop
+        while(True):
+            play_game()  # Start the game loop
     except Exception as e:
         print(f"Error: {e}")
     finally:
