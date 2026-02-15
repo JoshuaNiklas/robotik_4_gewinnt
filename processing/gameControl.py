@@ -3,6 +3,12 @@ import copy
 import subprocess
 import xml.etree.ElementTree as ET
 
+
+
+XML_FILE_BDETECT = './processing/board_detection.xml'
+XML_FILE_GSTATUS = './processing/game_status.xml'
+XML_FILE_RCTRL = './processing/robotControl.xml'
+
 ###########################
 # Transform A->B          #
 ###########################
@@ -45,7 +51,7 @@ def count_non_empty(board):
 
 def check_boards(board_1, board_2):
     command = [
-        'python', 'boardAnalyzer.py',
+        'python', './processing/boardAnalyzer.py',
         repr(board_1),
         repr(board_2)
     ]
@@ -94,15 +100,31 @@ computer_move = "None"
 # game start
 game_start()
 
+
+# draw board
+# robot will draw its move
+res = read_xml(XML_FILE_RCTRL, ["CELL_SEL", "SYNC_VAR"])
+capture_CELL_SEL = int(res["CELL_SEL"])
+capture_SYNC_VAR = int(res["SYNC_VAR"])
+print("the robot is drawing the board...")
+write_xml(XML_FILE_RCTRL, {"CELL_SEL": 0})
+# wait for the robot to draw board and complete its movement at the boards capture position
+while(True):
+    res = read_xml(XML_FILE_RCTRL, ["CELL_SEL", "SYNC_VAR"])
+    if(int(res["SYNC_VAR"]) == capture_SYNC_VAR + 2):
+        break
+    time.sleep(2)
+
+
 # check for empty board
-res = read_xml("board_detection.xml", ["detection_id"])
+res = read_xml(XML_FILE_BDETECT, ["detection_id"])
 detection_id = int(res["detection_id"])
 
-write_xml("board_detection.xml", {"capture_status": 1})
-print("Waiting for tracker.py to write the detection in board_detection.xml")
+write_xml(XML_FILE_BDETECT, {"capture_status": 1})
+print(f"Waiting for tracker.py to write the detection in {XML_FILE_BDETECT}")
 
 while(True):
-    res = read_xml("board_detection.xml", ["board_state", "detection_id"])
+    res = read_xml(XML_FILE_BDETECT, ["board_state", "detection_id"])
     if (detection_id + 1 == int(res["detection_id"])):
         if (count_non_empty(eval(res["board_state"])) == 0):
             board_1 = eval(res["board_state"])
@@ -113,18 +135,19 @@ while(True):
     
     time.sleep(1)
 
+
 # take player move
 while(True):
     input("Please draw a circle on the board and press Enter ...")
 
-    res = read_xml("board_detection.xml", ["detection_id"])
+    res = read_xml(XML_FILE_BDETECT, ["detection_id"])
     detection_id = int(res["detection_id"])
 
-    write_xml("board_detection.xml", {"capture_status": 1})
-    print("Waiting for tracker.py to write the detection in board_detection.xml")
+    write_xml(XML_FILE_BDETECT, {"capture_status": 1})
+    print(f"Waiting for tracker.py to write the detection in {XML_FILE_BDETECT}")
 
     while(True):
-        res = read_xml("board_detection.xml", ["board_state", "detection_id"])
+        res = read_xml(XML_FILE_BDETECT, ["board_state", "detection_id"])
         if (detection_id  + 1 == int(res["detection_id"])):
             board_2 = eval(res["board_state"])
             break
@@ -144,64 +167,75 @@ while(True):
     else:
         break
 
+
 # provide the player_move to game_status.xml so that connectFour.py can calculate the computer_move
-res = read_xml("game_status.xml", ["start", "last_win_state"])
 
-if (int(res["last_win_state"]) != 0):
-    write_xml("game_status.xml", {"last_win_state":0})
-
+# TODO Implement a break condition after a win situation (needs debug and optimation)
+res = read_xml(XML_FILE_GSTATUS, ["start", "last_win_state", "status"])
 if (int(res["start"]) == 0):
-    print("The connectFour.py program that calculates the computers move is not running. Please start the game again !")
+    if(res["last_win_state"] != 0):
+        print(f"Game Over {res['status']}")
+    else:
+        print("The connectFour.py program that calculates the computers move is not running. Please start the game again !")
     exit()
 
 print("Computer is calculating its move ...")
-write_xml("game_status.xml", {"player_column":player_move})
+write_xml(XML_FILE_GSTATUS, {"player_column":player_move})
+
 
 # TODO check if the computer has calculated its move (the algorithm is supposed to calculate the move and write it to game_status.xml in less than 2 minutes)
 time.sleep(2)
-computer_move = read_xml("game_status.xml", ["computer_row", "computer_column"])
+computer_move = read_xml(XML_FILE_GSTATUS, ["computer_row", "computer_column"])
 
 print(f"Selected Cell :{computer_move}")
 # TODO check if it is correct
 # transformed index from the algorithms solution to the robots cell selection list
 computer_move = to_1d_index(int(computer_move["computer_row"]), int(computer_move["computer_column"]))
-print(f"Selected Cell :{computer_move}")
+print(f"Selected Cell after Transform:{computer_move}")
+
 
 # robot will draw its move
-res = read_xml("robotControl.xml", ["CELL_SEL", "SYNC_VAR"])
+res = read_xml(XML_FILE_RCTRL, ["CELL_SEL", "SYNC_VAR"])
 capture_CELL_SEL = int(res["CELL_SEL"])
 capture_SYNC_VAR = int(res["SYNC_VAR"])
-
 print("the robot is drawing...")
-write_xml("robotControl.xml", {"CELL_SEL": computer_move})
+write_xml(XML_FILE_RCTRL, {"CELL_SEL": computer_move + 1})
 # wait for the robot to draw a cross and complete its movement at the boards capture position
 while(True):
-    res = read_xml("robotControl.xml", ["CELL_SEL", "SYNC_VAR"])
-
+    res = read_xml(XML_FILE_RCTRL, ["CELL_SEL", "SYNC_VAR"])
     if(int(res["SYNC_VAR"]) == capture_SYNC_VAR + 2):
         break
     time.sleep(2)
 
-res = read_xml("game_status.xml", ["game_state"])
+res = read_xml(XML_FILE_GSTATUS, ["game_state"])
 board_2 = eval(res["game_state"])
 
 board_1 = copy.deepcopy(board_2)
 
-# TODO Implement a break condition after a win situation 
+# TODO Implement a break condition after a win situation (needs debug and optimation)
+res = read_xml(XML_FILE_GSTATUS, ["start", "last_win_state", "status"])
+if (int(res["start"]) == 0):
+    if(res["last_win_state"] != 0):
+        print(f"Game Over {res['status']}")
+    else:
+        print("The connectFour.py program that calculates the computers move is not running. Please start the game again !")
+    exit()
+
+
 # Continue game after start
 while(True):
     # take player move
     while(True):
         input("Please draw a circle on the board and press Enter ...")
 
-        res = read_xml("board_detection.xml", ["detection_id"])
+        res = read_xml(XML_FILE_BDETECT, ["detection_id"])
         detection_id = int(res["detection_id"])
 
-        write_xml("board_detection.xml", {"capture_status": 1})
-        print("Waiting for tracker.py to write the detection in board_detection.xml")
+        write_xml(XML_FILE_BDETECT, {"capture_status": 1})
+        print(f"Waiting for tracker.py to write the detection in {XML_FILE_BDETECT}")
 
         while(True):
-            res = read_xml("board_detection.xml", ["board_state", "detection_id"])
+            res = read_xml(XML_FILE_BDETECT, ["board_state", "detection_id"])
             if (detection_id + 1 == int(res["detection_id"])):
                 board_2 = eval(res["board_state"])
                 break
@@ -222,51 +256,44 @@ while(True):
             break
 
     # provide the player_move to game_status.xml so that connectFour.py can calculate the computer_move
-    res = read_xml("game_status.xml", ["start", "last_win_state"])
-
-    if (int(res["last_win_state"]) != 0):
-        if(int(res["last_win_state"]) == 1):
-            print("This is a Tie")
-        elif(int(res["last_win_state"]) == 2):
-            print("Computer wins !!!")
-        elif(int(res["last_win_state"]) == 3):
-            print("Player wins !!!")
-            
-        write_xml("game_status.xml", {"last_win_state":0})
-        exit()
-
+    
+    # TODO Implement a break condition after a win situation (needs debug and optimation)
+    res = read_xml(XML_FILE_GSTATUS, ["start", "last_win_state", "status"])
     if (int(res["start"]) == 0):
-        print("The connectFour.py program that calculates the computers move is not running. Please start the game again !")
+        if(res["last_win_state"] != 0):
+            print(f"Game Over {res['status']}")
+        else:
+            print("The connectFour.py program that calculates the computers move is not running. Please start the game again !")
         exit()
 
     print("Computer is calculating its move ...")
-    write_xml("game_status.xml", {"player_column":player_move})
+    write_xml(XML_FILE_GSTATUS, {"player_column":player_move})
 
     # TODO check if the computer has calculated its move (the algorithm is supposed to calculate the move and write it to game_status.xml in less than 2 minutes)
     time.sleep(2)
-    computer_move = read_xml("game_status.xml", ["computer_row", "computer_column"])
+    computer_move = read_xml(XML_FILE_GSTATUS, ["computer_row", "computer_column"])
 
     print(f"Selected Cell :{computer_move}")
     # TODO check if it is correct
     # transformed index from the algorithms solution to the robots cell selection list
     computer_move = to_1d_index(int(computer_move["computer_row"]), int(computer_move["computer_column"]))
-    print(f"Calculated Selected Cell :{computer_move}")
+    print(f"Selected Cell after Transform:{computer_move}")
 
     # robot will draw its move
-    res = read_xml("robotControl.xml", ["CELL_SEL", "SYNC_VAR"])
+    res = read_xml(XML_FILE_RCTRL, ["CELL_SEL", "SYNC_VAR"])
     capture_CELL_SEL = int(res["CELL_SEL"])
     capture_SYNC_VAR = int(res["SYNC_VAR"])
 
     print("the robot is drawing...")
-    write_xml("robotControl.xml", {"CELL_SEL": computer_move})
+    write_xml(XML_FILE_RCTRL, {"CELL_SEL": computer_move + 1})
     # wait for the robot to draw a cross and complete its movement at the boards capture position
     while(True):
-        res = read_xml("robotControl.xml", ["CELL_SEL", "SYNC_VAR"])
+        res = read_xml(XML_FILE_RCTRL, ["CELL_SEL", "SYNC_VAR"])
         if(int(res["SYNC_VAR"]) == capture_SYNC_VAR + 2):
             break
         time.sleep(2)
 
-    res = read_xml("game_status.xml", ["game_state"])
+    res = read_xml(XML_FILE_GSTATUS, ["game_state"])
     board_2 = eval(res["game_state"])
 
     board_1 = copy.deepcopy(board_2)

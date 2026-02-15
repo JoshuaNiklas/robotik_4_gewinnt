@@ -11,7 +11,7 @@ COLUMN_COUNT = 7
 EMPTY = 0
 PLAYER = 1  
 COMPUTER = 2  
-XML_FILE = 'game_status.xml'
+XML_FILE = './processing/game_status.xml'
 
 def create_board():
     return np.zeros((ROW_COUNT, COLUMN_COUNT), int)  # Initialize empty game board
@@ -186,7 +186,7 @@ def read_xml():
         print(f"Error reading XML: {e}")
         return None, None, 'error', 0, [], []  # Read current game status from XML
 
-def write_xml_start():
+def write_start_xml():
     try:
         tree = ET.parse(XML_FILE)
         root = tree.getroot()
@@ -195,11 +195,25 @@ def write_xml_start():
     except Exception as e:
         print(f"Error writing XML: {e}")  # Write updated game status to XML
 
-def write_last_win_state_xml(last_win_state):
+def write_game_stop_xml():
     try:
         tree = ET.parse(XML_FILE)
         root = tree.getroot()
-        root.find('moves').text = str(last_win_state)
+        root.find('start').text = str(0)
+        tree.write(XML_FILE)
+    except Exception as e:
+        print(f"Error writing XML: {e}")  # Write updated game status to XML
+
+def write_last_win_state_xml(last_win_state):
+    # last_win_state = 
+    #             1 (player_win)
+    #             2 (computer_win)
+    #             3 (tie)
+
+    try:
+        tree = ET.parse(XML_FILE)
+        root = tree.getroot()
+        root.find('last_win_state').text = str(last_win_state)
         tree.write(XML_FILE)
     except Exception as e:
         print(f"Error writing XML: {e}")  # Write updated game status to XML
@@ -243,7 +257,7 @@ def play_game():
             print("The game has been stopped.")
             break
 
-        write_xml_start()
+        write_start_xml()
 
         if turn % 2 == 0:  # Player's turn
             if status == 'player_wait' and player_col != -1:
@@ -285,13 +299,12 @@ def play_game():
         turn += 1
         time.sleep(0.75)
 
-    initialize_xml()
-    
+    write_game_stop_xml()
+
 if __name__ == "__main__":
     try:
-        while(True):
-            play_game()  # Start the game loop
+        play_game()  # Start the game loop
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        initialize_xml()
+        write_game_stop_xml()

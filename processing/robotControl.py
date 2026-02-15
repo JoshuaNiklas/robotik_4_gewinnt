@@ -12,6 +12,8 @@ ROBOT_PORT = 6101
 MAX_RETRIES = 10
 RETRYING_TIME = 3
 
+XML_FILE = './processing/robotControl.xml'
+
 def write_xml(xml_file, changes):
     try:
         tree = ET.parse(xml_file)
@@ -189,18 +191,19 @@ if __name__ == "__main__":
         eki.write_variable("CELL_SEL", -1)
         eki.write_variable("SYNC_VAR", 1)
 
-        write_xml("robotControl.xml", {"SYNC_VAR": 1, "CELL_SEL":-1})
+        write_xml(XML_FILE, {"SYNC_VAR": 1, "CELL_SEL":-1})
 
         while True:
             SYNC_VAR = int(eki.read_variable("SYNC_VAR").get('Value'))
             CELL_SEL_ASSET = int(eki.read_variable("CELL_SEL").get('Value'))
 
             logging.info(f"SYNC_VAR: {SYNC_VAR}, CELL_SEL: {CELL_SEL_ASSET}")
-            write_xml("robotControl.xml", {"SYNC_VAR": SYNC_VAR})
+            write_xml(XML_FILE, {"SYNC_VAR": SYNC_VAR})
 
-            res = read_xml("robotControl.xml", ["CELL_SEL"])
+            res = read_xml(XML_FILE, ["CELL_SEL"])
             CELL_SEL = int(res["CELL_SEL"])
 
+            # TODO check if the connection is active
             if (SYNC_VAR % 2 != 0) and (CELL_SEL != -1):
                 logging.info("Computer Operation detected")
                 SYNC_VAR += 1
@@ -209,7 +212,7 @@ if __name__ == "__main__":
                 eki.write_variable("SYNC_VAR", SYNC_VAR)
                 time.sleep(1)
                 CELL_SEL = -1
-                write_xml("robotControl.xml", {"CELL_SEL": -1})
+                write_xml(XML_FILE, {"CELL_SEL": -1})
 
             time.sleep(3)
 
